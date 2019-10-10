@@ -267,8 +267,20 @@ class JoyCon:
             },
         }
 
+    def set_player_lamp_on(self, on_pattern):
+        self._write_output_report(b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='big'))
+
+    def set_player_lamp_flashing(self, flashing_pattern):
+        self._write_output_report(b'\x01', b'\x30', ((flashing_pattern & 0xF)<< 4).to_bytes(1, byteorder='big'))
+
+    def set_player_lamp(self, pattern):
+        self._write_output_report(b'\x01', b'\x30', pattern.to_bytes(1, byteorder='big'))
+
 if __name__ == '__main__':
     joycon = JoyCon(JoyCon.VENDOR_ID, JoyCon.L_PRODUCT_ID)
+    lamp_pattern = 0
     while True:
         print(joycon.get_status())
-        time.sleep(0.02)
+        joycon.set_player_lamp_on(lamp_pattern)
+        lamp_pattern = (lamp_pattern + 1) & 0xf
+        time.sleep(0.2)
