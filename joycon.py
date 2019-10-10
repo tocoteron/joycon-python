@@ -268,7 +268,7 @@ class JoyCon:
         }
 
 if __name__ == '__main__':
-    joycon = JoyCon(JoyCon.VENDOR_ID, JoyCon.R_PRODUCT_ID)
+    joycon = JoyCon(JoyCon.VENDOR_ID, JoyCon.L_PRODUCT_ID)
     while True:
         print(joycon.get_status())
         time.sleep(0.02)
