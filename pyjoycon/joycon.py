@@ -2,6 +2,7 @@ import hid
 import time
 import threading
 
+
 class JoyCon:
     VENDOR_ID = 0x057E
     L_PRODUCT_ID = 0x2006
@@ -30,7 +31,8 @@ class JoyCon:
         self._setup_sensors()
 
         self._input_report = bytes(self._INPUT_REPORT_SIZE)
-        self._update_input_report_thread = threading.Thread(target=self._update_input_report)
+        self._update_input_report_thread = threading.Thread(
+            target=self._update_input_report)
         self._update_input_report_thread.setDaemon(True)
         self._update_input_report_thread.start()
 
@@ -50,10 +52,10 @@ class JoyCon:
 
     def _write_output_report(self, command, subcommand, argument):
         self._joycon_device.write(command
-                                 + self._packet_number.to_bytes(1, byteorder='big')
-                                 + self._RUMBLE_DATA
-                                 + subcommand
-                                 + argument)
+                                  + self._packet_number.to_bytes(1, byteorder='big')
+                                  + self._RUMBLE_DATA
+                                  + subcommand
+                                  + argument)
         self._packet_number = (self._packet_number + 1) & 0xF
 
     def _update_input_report(self):
@@ -69,7 +71,7 @@ class JoyCon:
         self._write_output_report(b'\x01', b'\x03', b'\x30')
 
     def _to_int16le_from_2bytes(self, hbytebe, lbytebe):
-        uint16le = (lbytebe << 8) | hbytebe 
+        uint16le = (lbytebe << 8) | hbytebe
         int16le = uint16le if uint16le < 32768 else uint16le - 65536
         return int16le
 
@@ -268,13 +270,17 @@ class JoyCon:
         }
 
     def set_player_lamp_on(self, on_pattern):
-        self._write_output_report(b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='big'))
+        self._write_output_report(
+            b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='big'))
 
     def set_player_lamp_flashing(self, flashing_pattern):
-        self._write_output_report(b'\x01', b'\x30', ((flashing_pattern & 0xF)<< 4).to_bytes(1, byteorder='big'))
+        self._write_output_report(
+            b'\x01', b'\x30', ((flashing_pattern & 0xF) << 4).to_bytes(1, byteorder='big'))
 
     def set_player_lamp(self, pattern):
-        self._write_output_report(b'\x01', b'\x30', pattern.to_bytes(1, byteorder='big'))
+        self._write_output_report(
+            b'\x01', b'\x30', pattern.to_bytes(1, byteorder='big'))
+
 
 if __name__ == '__main__':
     joycon = JoyCon(JoyCon.VENDOR_ID, JoyCon.L_PRODUCT_ID)
