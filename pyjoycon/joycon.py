@@ -1,7 +1,7 @@
 import hid
 import time
 import threading
-
+import pyjoycon.device as d
 
 class JoyCon:
     VENDOR_ID = 0x057E
@@ -286,10 +286,13 @@ class JoyCon:
 
 
 if __name__ == '__main__':
-    joycon = JoyCon(JoyCon.VENDOR_ID, JoyCon.L_PRODUCT_ID)
-    lamp_pattern = 0
-    while True:
-        print(joycon.get_status())
-        joycon.set_player_lamp_on(lamp_pattern)
-        lamp_pattern = (lamp_pattern + 1) & 0xf
-        time.sleep(0.2)
+    ids = d.get_L_ids() if None not in d.get_L_ids() else d.get_R_ids()
+
+    if None not in ids:
+        joycon = JoyCon(*ids)
+        lamp_pattern = 0
+        while True:
+            print(joycon.get_status())
+            joycon.set_player_lamp_on(lamp_pattern)
+            lamp_pattern = (lamp_pattern + 1) & 0xf
+            time.sleep(0.2)
