@@ -4,6 +4,15 @@ Python driver for Nintendo Switch Joy-Con
 
 ## Usage
 
+Quick check
+
+```shell
+cd joycon-python/
+python pyjoycon/joycon.py
+```
+
+Use as module
+
 ```python
 from pyjoycon import device
 from pyjoycon.joycon import JoyCon
@@ -12,8 +21,7 @@ from pyjoycon.joycon import JoyCon
 r_ids = device.get_ids("R")
 r_joycon = JoyCon(*r_ids)
 
-r_joycon.get_accel_x()
-
+r_joycon.get_status()
 ```
 
 ## install
