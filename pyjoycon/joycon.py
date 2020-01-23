@@ -78,6 +78,9 @@ class JoyCon:
     def _get_nbit_from_input_report(self, offset_byte, offset_bit, nbit):
         return (self._input_report[offset_byte] >> offset_bit) & ((1 << nbit) - 1)
 
+    def __del__(self):
+        self._close()
+
     def is_left(self):
         return self._PRODUCT_ID == self.L_PRODUCT_ID
 
