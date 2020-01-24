@@ -1,6 +1,7 @@
 import hid
 import time
 import threading
+import pyjoycon.device as d
 
 class JoyCon:
     VENDOR_ID = 0x057E
@@ -30,7 +31,8 @@ class JoyCon:
         self._setup_sensors()
 
         self._input_report = bytes(self._INPUT_REPORT_SIZE)
-        self._update_input_report_thread = threading.Thread(target=self._update_input_report)
+        self._update_input_report_thread = threading.Thread(
+            target=self._update_input_report)
         self._update_input_report_thread.setDaemon(True)
         self._update_input_report_thread.start()
 
@@ -50,10 +52,10 @@ class JoyCon:
 
     def _write_output_report(self, command, subcommand, argument):
         self._joycon_device.write(command
-                                 + self._packet_number.to_bytes(1, byteorder='big')
-                                 + self._RUMBLE_DATA
-                                 + subcommand
-                                 + argument)
+                                  + self._packet_number.to_bytes(1, byteorder='big')
+                                  + self._RUMBLE_DATA
+                                  + subcommand
+                                  + argument)
         self._packet_number = (self._packet_number + 1) & 0xF
 
     def _update_input_report(self):
@@ -69,12 +71,15 @@ class JoyCon:
         self._write_output_report(b'\x01', b'\x03', b'\x30')
 
     def _to_int16le_from_2bytes(self, hbytebe, lbytebe):
-        uint16le = (lbytebe << 8) | hbytebe 
+        uint16le = (lbytebe << 8) | hbytebe
         int16le = uint16le if uint16le < 32768 else uint16le - 65536
         return int16le
 
     def _get_nbit_from_input_report(self, offset_byte, offset_bit, nbit):
         return (self._input_report[offset_byte] >> offset_bit) & ((1 << nbit) - 1)
+
+    def __del__(self):
+        self._close()
 
     def is_left(self):
         return self._PRODUCT_ID == self.L_PRODUCT_ID
@@ -268,19 +273,26 @@ class JoyCon:
         }
 
     def set_player_lamp_on(self, on_pattern):
-        self._write_output_report(b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='big'))
+        self._write_output_report(
+            b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='big'))
 
     def set_player_lamp_flashing(self, flashing_pattern):
-        self._write_output_report(b'\x01', b'\x30', ((flashing_pattern & 0xF)<< 4).to_bytes(1, byteorder='big'))
+        self._write_output_report(
+            b'\x01', b'\x30', ((flashing_pattern & 0xF) << 4).to_bytes(1, byteorder='big'))
 
     def set_player_lamp(self, pattern):
-        self._write_output_report(b'\x01', b'\x30', pattern.to_bytes(1, byteorder='big'))
+        self._write_output_report(
+            b'\x01', b'\x30', pattern.to_bytes(1, byteorder='big'))
+
 
 if __name__ == '__main__':
-    joycon = JoyCon(JoyCon.VENDOR_ID, JoyCon.L_PRODUCT_ID)
-    lamp_pattern = 0
-    while True:
-        print(joycon.get_status())
-        joycon.set_player_lamp_on(lamp_pattern)
-        lamp_pattern = (lamp_pattern + 1) & 0xf
-        time.sleep(0.2)
+    ids = d.get_L_ids() if None not in d.get_L_ids() else d.get_R_ids()
+
+    if None not in ids:
+        joycon = JoyCon(*ids)
+        lamp_pattern = 0
+        while True:
+            print(joycon.get_status())
+            joycon.set_player_lamp_on(lamp_pattern)
+            lamp_pattern = (lamp_pattern + 1) & 0xf
+            time.sleep(0.2)
