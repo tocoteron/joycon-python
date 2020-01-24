@@ -10,11 +10,11 @@ with open('LICENSE') as f:
 setup(
     name='joycon-python',
     version='0.1.0',
-    description='Sample package for Python-Guide.org',
+    description='Python driver for Nintendo Switch Joy-Con',
     long_description=readme,
-    author='Kenneth Reitz',
-    author_email='me@kennethreitz.com',
-    url='https://github.com/kennethreitz/samplemod',
+    author='tokoroten-lab, atsukoba',
+    author_email='tokoroten.lab@gmail.com, atsuya_kobayashi@yahoo.co.jp',
+    url='https://github.com/tokoroten-lab/joycon-python',
     license=license,
-    packages=find_packages(exclude=('tests', 'docs'))
+    packages=find_packages(exclude=('pyjoycon', 'sample'))
 )
