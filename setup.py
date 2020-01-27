@@ -12,6 +12,7 @@ setup(
     version='0.1.0',
     description='Python driver for Nintendo Switch Joy-Con',
     long_description=readme,
+    long_description_content_type='text/markdown',
     author='tokoroten-lab, atsukoba',
     author_email='tokoroten.lab@gmail.com, atsuya_kobayashi@yahoo.co.jp',
     url='https://github.com/tokoroten-lab/joycon-python',
