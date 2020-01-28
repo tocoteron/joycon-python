@@ -9,7 +9,7 @@ with open('LICENSE') as f:
 
 setup(
     name='joycon-python',
-    version='0.1.0',
+    version='0.1.1',
     description='Python driver for Nintendo Switch Joy-Con',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -17,5 +17,5 @@ setup(
     author_email='tokoroten.lab@gmail.com, atsuya_kobayashi@yahoo.co.jp',
     url='https://github.com/tokoroten-lab/joycon-python',
     license=license,
-    packages=find_packages(exclude=('pyjoycon', 'sample'))
+    packages=find_packages()
 )
