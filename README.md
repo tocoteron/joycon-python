@@ -1,4 +1,4 @@
-# joycon-python
+# ![logo](https://i.gyazo.com/af04cc6000f2815ebc00d4dcf06b1eb9.png)
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/joycon-python)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/joycon-python)
@@ -28,7 +28,7 @@ from pyjoycon.joycon import JoyCon
 
 
 ids = device.get_ids("R")
-joycon = JoyCon(*r_ids)
+joycon = JoyCon(*ids)
 
 joycon.get_status()
 ```
@@ -36,59 +36,64 @@ joycon.get_status()
 ## status values
 
 ```python
-{'battery': {
-  'charging': 0,
-  'level': 2},
+{
+  'battery': {
+    'charging': 0,
+    'level': 2
+  },
   'buttons': {
-    'right': {'y': 0,
-    'x': 0,
-    'b': 0,
-    'a': 0,
-    'sr': 0,
-    'sl': 0,
-    'r': 0,
-    'zr': 0
+    'right': {
+      'y': 0,
+      'x': 0,
+      'b': 0,
+      'a': 0,
+      'sr': 0,
+      'sl': 0,
+      'r': 0,
+      'zr': 0
+    },
+    'shared': {
+      'minus': 0,
+      'plus': 0,
+      'r-stick': 0,
+      'l-stick': 0,
+      'home': 0,
+      'capture': 0,
+      'charging-grip': 0
+    },
+    'left': {
+      'down': 0,
+      'up': 0,
+      'right': 0,
+      'left': 0,
+      'sr': 0,
+      'sl': 0,
+      'l': 0,
+      'zl': 0
+    }
   },
-  'shared': {
-    'minus': 0,
-    'plus': 0,
-    'r-stick': 0,
-    'l-stick': 0,
-    'home': 0,
-    'capture': 0,
-    'charging-grip': 0
+  'analog-sticks': {
+    'left': {
+      'horizontal': 0,
+      'vertical': 0
+    },
+    'right': {
+      'horizontal': 2170,
+      'vertical': 1644
+    }
   },
-  'left': {
-    'down': 0,
-    'up': 0,
-    'right': 0,
-    'left': 0,
-    'sr': 0,
-    'sl': 0,
-    'l': 0,
-    'zl': 0
+  'accel': {
+    'x': 879,
+    'y': 1272,
+    'z': 549
+  },
+  'gyro': {
+    'x': -354,
+    'y': -7,
+    'z': 281
   }
-},
-'analog-sticks': {
-  'left': {
-    'horizontal': 0,
-    'vertical': 0
-  },
-  'right': {
-    'horizontal': 2170,
-    'vertical': 1644
-  }
-},
-'accel': {
-  'x': 879,
-  'y': 1272,
-  'z': 549
-},
-'gyro': {
-  'x': -354,
-  'y': -7,
-  'z': 281
-}}
+}
+
 ```
 
 `cython-hidapi` to use Bluetooth / HID connection in Python.
