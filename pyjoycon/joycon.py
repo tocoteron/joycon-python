@@ -3,6 +3,7 @@ import time
 import threading
 import pyjoycon.device as d
 
+
 class JoyCon:
     VENDOR_ID = 0x057E
     L_PRODUCT_ID = 0x2006
