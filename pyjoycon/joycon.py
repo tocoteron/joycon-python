@@ -23,7 +23,7 @@ class JoyCon:
         if vendor_id != self.VENDOR_ID:
             raise ValueError('vendor_id is invalid')
 
-        if product_id not in [self.L_PRODUCT_ID, self.R_PRODUCT_ID]:
+        if product_id not in (self.L_PRODUCT_ID, self.R_PRODUCT_ID):
             raise ValueError('product_id is invalid')
 
         self._joycon_device = None
@@ -185,40 +185,40 @@ class JoyCon:
         return self._get_nbit_from_input_report(10, 4, 4) | (self._get_nbit_from_input_report(11, 0, 8) << 4)
 
     def get_accel_x(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
         return (self._to_int16le_from_2bytes(self._get_nbit_from_input_report(13 + sample_idx * 12, 0, 8),
                                              self._get_nbit_from_input_report(14 + sample_idx * 12, 0, 8))
                 - (self._L_ACCEL_OFFSET_X if self.is_left() else self._R_ACCEL_OFFSET_X))
 
     def get_accel_y(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
         return (self._to_int16le_from_2bytes(self._get_nbit_from_input_report(15 + sample_idx * 12, 0, 8),
                                              self._get_nbit_from_input_report(16 + sample_idx * 12, 0, 8))
                 - (self._L_ACCEL_OFFSET_Y if self.is_left() else self._R_ACCEL_OFFSET_Y))
 
     def get_accel_z(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
         return (self._to_int16le_from_2bytes(self._get_nbit_from_input_report(17 + sample_idx * 12, 0, 8),
                                              self._get_nbit_from_input_report(18 + sample_idx * 12, 0, 8))
                 - (self._L_ACCEL_OFFSET_Z if self.is_left() else self._R_ACCEL_OFFSET_Z))
 
     def get_gyro_x(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
         return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(19 + sample_idx * 12, 0, 8),
                                             self._get_nbit_from_input_report(20 + sample_idx * 12, 0, 8))
 
     def get_gyro_y(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
         return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(21 + sample_idx * 12, 0, 8),
                                             self._get_nbit_from_input_report(22 + sample_idx * 12, 0, 8))
 
     def get_gyro_z(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
         return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(23 + sample_idx * 12, 0, 8),
                                             self._get_nbit_from_input_report(24 + sample_idx * 12, 0, 8))
