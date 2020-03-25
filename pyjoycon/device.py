@@ -22,7 +22,7 @@ def get_device_ids():
 
     for device in devices:
         prod = device['product_string']
-        if "Joy-Con" in prod:
+        if prod and "Joy-Con" in prod:
             print(prod)
             print(f"product_id is {device['product_id']}")
             print(f"vendor_id is {device['vendor_id']}")

@@ -26,9 +26,12 @@ class JoyCon:
         if product_id not in [self.L_PRODUCT_ID, self.R_PRODUCT_ID]:
             raise ValueError('product_id is invalid')
 
-        self._joycon_device = self._open(vendor_id, product_id)
+        self._joycon_device = None
         self._PRODUCT_ID = product_id
         self._packet_number = 0
+
+        # connect to joycon
+        self._joycon_device = self._open(vendor_id, product_id)
         self._setup_sensors()
 
         self._input_report = bytes(self._INPUT_REPORT_SIZE)
@@ -38,15 +41,21 @@ class JoyCon:
         self._update_input_report_thread.start()
 
     def _open(self, vendor_id, product_id):
-        _joycon_device = hid.device()
         try:
-            _joycon_device.open(vendor_id, product_id)
+            if hasattr(hid, "device"):  # hidapi
+                _joycon_device = hid.device(vendor_id, product_id)
+            elif hasattr(hid, "Device"):  # hid
+                _joycon_device = hid.Device(vendor_id, product_id)
+            else:
+                raise Exception("Implementation of hid is not recognized!")
         except IOError:
             raise IOError('joycon connect failed')
         return _joycon_device
 
     def _close(self):
-        self._joycon_device.close()
+        if self._joycon_device:
+            self._joycon_device.close()
+            self._joycon_device = None
 
     def _read_input_report(self):
         return self._joycon_device.read(self._INPUT_REPORT_SIZE)
