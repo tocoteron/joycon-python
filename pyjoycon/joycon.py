@@ -18,7 +18,7 @@ class JoyCon:
     _INPUT_REPORT_FREQ = 1.0 / 60.0
     _RUMBLE_DATA = b'\x00\x01\x40\x40\x00\x01\x40\x40'
 
-    def __init__(self, vendor_id, product_id):
+    def __init__(self, vendor_id: int, product_id: int):
         if vendor_id != self.VENDOR_ID:
             raise ValueError('vendor_id is invalid')
 
@@ -222,7 +222,7 @@ class JoyCon:
         return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(23 + sample_idx * 12, 0, 8),
                                             self._get_nbit_from_input_report(24 + sample_idx * 12, 0, 8))
 
-    def get_status(self):
+    def get_status(self) -> dict:
         return {
             "battery": {
                 "charging": self.get_battery_charging(),
@@ -281,15 +281,15 @@ class JoyCon:
             },
         }
 
-    def set_player_lamp_on(self, on_pattern):
+    def set_player_lamp_on(self, on_pattern: int):
         self._write_output_report(
             b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='big'))
 
-    def set_player_lamp_flashing(self, flashing_pattern):
+    def set_player_lamp_flashing(self, flashing_pattern: int):
         self._write_output_report(
             b'\x01', b'\x30', ((flashing_pattern & 0xF) << 4).to_bytes(1, byteorder='big'))
 
-    def set_player_lamp(self, pattern):
+    def set_player_lamp(self, pattern: int):
         self._write_output_report(
             b'\x01', b'\x30', pattern.to_bytes(1, byteorder='big'))
 
