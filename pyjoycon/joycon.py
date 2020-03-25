@@ -1,7 +1,6 @@
 import hid
 import time
 import threading
-import pyjoycon.device as d
 
 
 class JoyCon:
@@ -296,6 +295,7 @@ class JoyCon:
 
 
 if __name__ == '__main__':
+    import pyjoycon.device as d
     ids = d.get_L_ids() if None not in d.get_L_ids() else d.get_R_ids()
 
     if None not in ids:
