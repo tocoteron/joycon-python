@@ -16,7 +16,7 @@ class JoyCon:
     _INPUT_REPORT_PERIOD = 1.0 / 60.0
     _RUMBLE_DATA = b'\x00\x01\x40\x40\x00\x01\x40\x40'
 
-    def __init__(self, vendor_id: int, product_id: int):
+    def __init__(self, vendor_id: int, product_id: int, serial: str=None):
         if vendor_id != self.VENDOR_ID:
             raise ValueError('vendor_id is invalid')
 
@@ -24,8 +24,9 @@ class JoyCon:
             raise ValueError('product_id is invalid')
 
         self._joycon_device = None
-        self._PRODUCT_ID = product_id
         self._packet_number = 0
+        self._PRODUCT_ID = product_id
+        self._SERIAL_NUMBER = serial
         if self.is_left():
             self.set_accel_callibration(self._PRESET_L_ACCEL_OFFSET)
             self.set_gyro_callibration(self._PRESET_L_GYRO_OFFSET)
@@ -34,7 +35,7 @@ class JoyCon:
             self.set_gyro_callibration(self._PRESET_R_GYRO_OFFSET)
 
         # connect to joycon
-        self._joycon_device = self._open(vendor_id, product_id)
+        self._joycon_device = self._open(vendor_id, product_id, serial=None)
         self._setup_sensors()
 
         self._input_report = bytes(self._INPUT_REPORT_SIZE)
@@ -43,12 +44,12 @@ class JoyCon:
         self._update_input_report_thread.setDaemon(True)
         self._update_input_report_thread.start()
 
-    def _open(self, vendor_id, product_id):
+    def _open(self, vendor_id, product_id, serial):
         try:
             if hasattr(hid, "device"):  # hidapi
-                _joycon_device = hid.device(vendor_id, product_id)
+                _joycon_device = hid.device(vendor_id, product_id, serial)
             elif hasattr(hid, "Device"):  # hid
-                _joycon_device = hid.Device(vendor_id, product_id)
+                _joycon_device = hid.Device(vendor_id, product_id, serial)
             else:
                 raise Exception("Implementation of hid is not recognized!")
         except IOError:
