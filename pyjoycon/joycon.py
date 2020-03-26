@@ -16,7 +16,7 @@ class JoyCon:
     _INPUT_REPORT_PERIOD = 1.0 / 60.0
     _RUMBLE_DATA = b'\x00\x01\x40\x40\x00\x01\x40\x40'
 
-    def __init__(self, vendor_id: int, product_id: int, serial: str=None):
+    def __init__(self, vendor_id: int, product_id: int, serial: str = None):
         if vendor_id != self.VENDOR_ID:
             raise ValueError('vendor_id is invalid')
 
@@ -113,7 +113,7 @@ class JoyCon:
 
     def register_update_hook(self, callback):
         self._input_hooks.append(callback)
-        return callback # this makes it so you could use it as a decorator
+        return callback  # this makes it so you could use it as a decorator
 
     def is_left(self):
         return self._PRODUCT_ID == self.L_PRODUCT_ID
