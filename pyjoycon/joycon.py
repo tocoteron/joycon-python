@@ -42,8 +42,8 @@ class JoyCon:
         self._setup_sensors()
 
         # start talking with the joycon in a daemon thread
-        self._update_input_report_thread = threading.Thread(
-            target=self._update_input_report)
+        self._update_input_report_thread \
+            = threading.Thread(target=self._update_input_report)
         self._update_input_report_thread.setDaemon(True)
         self._update_input_report_thread.start()
 
@@ -197,16 +197,20 @@ class JoyCon:
         return self._get_nbit_from_input_report(5, 7, 1)
 
     def get_stick_left_horizontal(self):
-        return self._get_nbit_from_input_report(6, 0, 8) | (self._get_nbit_from_input_report(7, 0, 4) << 8)
+        return self._get_nbit_from_input_report(6, 0, 8) \
+            | (self._get_nbit_from_input_report(7, 0, 4) << 8)
 
     def get_stick_left_vertical(self):
-        return self._get_nbit_from_input_report(7, 4, 4) | (self._get_nbit_from_input_report(8, 0, 8) << 4)
+        return self._get_nbit_from_input_report(7, 4, 4) \
+            | (self._get_nbit_from_input_report(8, 0, 8) << 4)
 
     def get_stick_right_horizontal(self):
-        return self._get_nbit_from_input_report(9, 0, 8) | (self._get_nbit_from_input_report(10, 0, 4) << 8)
+        return self._get_nbit_from_input_report(9, 0, 8) \
+            | (self._get_nbit_from_input_report(10, 0, 4) << 8)
 
     def get_stick_right_vertical(self):
-        return self._get_nbit_from_input_report(10, 4, 4) | (self._get_nbit_from_input_report(11, 0, 8) << 4)
+        return self._get_nbit_from_input_report(10, 4, 4) \
+            | (self._get_nbit_from_input_report(11, 0, 8) << 4)
 
     def get_accel_x(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
