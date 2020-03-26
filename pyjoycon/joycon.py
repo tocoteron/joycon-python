@@ -26,6 +26,7 @@ class JoyCon:
         # setup internal state
         self._input_hooks = []
         self._joycon_device = None
+        self._input_report = bytes(self._INPUT_REPORT_SIZE)
         self._packet_number = 0
         self._PRODUCT_ID = product_id
         self._SERIAL_NUMBER = serial
@@ -40,7 +41,7 @@ class JoyCon:
         self._joycon_device = self._open(vendor_id, product_id, serial=None)
         self._setup_sensors()
 
-        self._input_report = bytes(self._INPUT_REPORT_SIZE)
+        # start talking with the joycon in a daemon thread
         self._update_input_report_thread = threading.Thread(
             target=self._update_input_report)
         self._update_input_report_thread.setDaemon(True)
