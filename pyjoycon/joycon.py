@@ -7,15 +7,13 @@ class JoyCon:
     VENDOR_ID = 0x057E
     L_PRODUCT_ID = 0x2006
     R_PRODUCT_ID = 0x2007
-    _L_ACCEL_OFFSET_X = 350
-    _L_ACCEL_OFFSET_Y = 0
-    _L_ACCEL_OFFSET_Z = 4081
-    _R_ACCEL_OFFSET_X = 350
-    _R_ACCEL_OFFSET_Y = 0
-    _R_ACCEL_OFFSET_Z = -4081
+    _PRESET_L_ACCEL_OFFSET = (350, 0,  4081)
+    _PRESET_R_ACCEL_OFFSET = (350, 0, -4081)
+    _PRESET_L_GYRO_OFFSET = (0, 0, 0)
+    _PRESET_R_GYRO_OFFSET = (0, 0, 0)
 
     _INPUT_REPORT_SIZE = 49
-    _INPUT_REPORT_FREQ = 1.0 / 60.0
+    _INPUT_REPORT_PERIOD = 1.0 / 60.0
     _RUMBLE_DATA = b'\x00\x01\x40\x40\x00\x01\x40\x40'
 
     def __init__(self, vendor_id: int, product_id: int):
@@ -28,6 +26,12 @@ class JoyCon:
         self._joycon_device = None
         self._PRODUCT_ID = product_id
         self._packet_number = 0
+        if self.is_left():
+            self.set_accel_callibration(self._PRESET_L_ACCEL_OFFSET)
+            self.set_gyro_callibration(self._PRESET_L_GYRO_OFFSET)
+        else:
+            self.set_accel_callibration(self._PRESET_R_ACCEL_OFFSET)
+            self.set_gyro_callibration(self._PRESET_R_GYRO_OFFSET)
 
         # connect to joycon
         self._joycon_device = self._open(vendor_id, product_id)
@@ -89,6 +93,16 @@ class JoyCon:
 
     def __del__(self):
         self._close()
+
+    def set_gyro_callibration(self, offset_xyz):
+        self._GYRO_OFFSET_X = offset_xyz[0]
+        self._GYRO_OFFSET_Y = offset_xyz[1]
+        self._GYRO_OFFSET_Z = offset_xyz[2]
+
+    def set_accel_callibration(self, offset_xyz):
+        self._ACCEL_OFFSET_X = offset_xyz[0]
+        self._ACCEL_OFFSET_Y = offset_xyz[1]
+        self._ACCEL_OFFSET_Z = offset_xyz[2]
 
     def is_left(self):
         return self._PRODUCT_ID == self.L_PRODUCT_ID
@@ -186,41 +200,50 @@ class JoyCon:
     def get_accel_x(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return (self._to_int16le_from_2bytes(self._get_nbit_from_input_report(13 + sample_idx * 12, 0, 8),
-                                             self._get_nbit_from_input_report(14 + sample_idx * 12, 0, 8))
-                - (self._L_ACCEL_OFFSET_X if self.is_left() else self._R_ACCEL_OFFSET_X))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(13 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(14 + sample_idx * 12, 0, 8))
+        return data - self._ACCEL_OFFSET_X
 
     def get_accel_y(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return (self._to_int16le_from_2bytes(self._get_nbit_from_input_report(15 + sample_idx * 12, 0, 8),
-                                             self._get_nbit_from_input_report(16 + sample_idx * 12, 0, 8))
-                - (self._L_ACCEL_OFFSET_Y if self.is_left() else self._R_ACCEL_OFFSET_Y))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(15 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(16 + sample_idx * 12, 0, 8))
+        return data - self._ACCEL_OFFSET_Y
 
     def get_accel_z(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return (self._to_int16le_from_2bytes(self._get_nbit_from_input_report(17 + sample_idx * 12, 0, 8),
-                                             self._get_nbit_from_input_report(18 + sample_idx * 12, 0, 8))
-                - (self._L_ACCEL_OFFSET_Z if self.is_left() else self._R_ACCEL_OFFSET_Z))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(17 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(18 + sample_idx * 12, 0, 8))
+        return data - self._ACCEL_OFFSET_Z
 
     def get_gyro_x(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(19 + sample_idx * 12, 0, 8),
-                                            self._get_nbit_from_input_report(20 + sample_idx * 12, 0, 8))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(19 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(20 + sample_idx * 12, 0, 8))
+        return data - self._GYRO_OFFSET_X
 
     def get_gyro_y(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(21 + sample_idx * 12, 0, 8),
-                                            self._get_nbit_from_input_report(22 + sample_idx * 12, 0, 8))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(21 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(22 + sample_idx * 12, 0, 8))
+        return data - self._GYRO_OFFSET_Y
 
     def get_gyro_z(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(23 + sample_idx * 12, 0, 8),
-                                            self._get_nbit_from_input_report(24 + sample_idx * 12, 0, 8))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(23 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(24 + sample_idx * 12, 0, 8))
+        return data - self._GYRO_OFFSET_Z
 
     def get_status(self) -> dict:
         return {
