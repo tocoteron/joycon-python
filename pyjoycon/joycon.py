@@ -23,6 +23,8 @@ class JoyCon:
         if product_id not in (self.L_PRODUCT_ID, self.R_PRODUCT_ID):
             raise ValueError('product_id is invalid')
 
+        # setup internal state
+        self._input_hooks = []
         self._joycon_device = None
         self._packet_number = 0
         self._PRODUCT_ID = product_id
@@ -75,6 +77,8 @@ class JoyCon:
     def _update_input_report(self):
         while True:
             self._input_report = self._read_input_report()
+            for callback in self._input_hooks:
+                callback(self)
 
     def _setup_sensors(self):
         # Enable 6 axis sensors
@@ -104,6 +108,10 @@ class JoyCon:
         self._ACCEL_OFFSET_X = offset_xyz[0]
         self._ACCEL_OFFSET_Y = offset_xyz[1]
         self._ACCEL_OFFSET_Z = offset_xyz[2]
+
+    def register_update_hook(self, callback):
+        self._input_hooks.append(callback)
+        return callback # this makes it so you could use it as a decorator
 
     def is_left(self):
         return self._PRODUCT_ID == self.L_PRODUCT_ID
