@@ -89,7 +89,8 @@ class JoyCon:
         # Change format of input report
         self._write_output_report(b'\x01', b'\x03', b'\x30')
 
-    def _to_int16le_from_2bytes(self, hbytebe, lbytebe):
+    @staticmethod
+    def _to_int16le_from_2bytes(hbytebe, lbytebe):
         uint16le = (lbytebe << 8) | hbytebe
         int16le = uint16le if uint16le < 32768 else uint16le - 65536
         return int16le
