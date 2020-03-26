@@ -54,8 +54,8 @@ class JoyCon:
                 _joycon_device = hid.Device(vendor_id, product_id, serial)
             else:
                 raise Exception("Implementation of hid is not recognized!")
-        except IOError:
-            raise IOError('joycon connect failed')
+        except IOError as e:
+            raise IOError('joycon connect failed') from e
         return _joycon_device
 
     def _close(self):
