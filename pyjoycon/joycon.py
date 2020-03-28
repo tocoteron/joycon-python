@@ -103,9 +103,13 @@ class JoyCon:
 
         return report[7:size+7]
 
-    def _update_input_report(self):
+    def _update_input_report(self):  # daemon thread
         while True:
-            self._input_report = self._read_input_report()
+            report = self._read_input_report()
+            while report[0] != 0x30: # TODO, handle input reports of type 0x21 and 0x3f
+                report = self._read_input_report()
+            self._input_report = report
+
             for callback in self._input_hooks:
                 callback(self)
 
