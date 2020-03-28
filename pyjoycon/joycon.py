@@ -69,8 +69,9 @@ class JoyCon:
         return self._joycon_device.read(self._INPUT_REPORT_SIZE)
 
     def _write_output_report(self, command, subcommand, argument):
+        # TODO: add documentation
         self._joycon_device.write(command
-                                  + self._packet_number.to_bytes(1, byteorder='big')
+                                  + self._packet_number.to_bytes(1, byteorder='little')
                                   + self._RUMBLE_DATA
                                   + subcommand
                                   + argument)
@@ -367,15 +368,15 @@ class JoyCon:
 
     def set_player_lamp_on(self, on_pattern: int):
         self._write_output_report(
-            b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='big'))
+            b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='little'))
 
     def set_player_lamp_flashing(self, flashing_pattern: int):
         self._write_output_report(
-            b'\x01', b'\x30', ((flashing_pattern & 0xF) << 4).to_bytes(1, byteorder='big'))
+            b'\x01', b'\x30', ((flashing_pattern & 0xF) << 4).to_bytes(1, byteorder='little'))
 
     def set_player_lamp(self, pattern: int):
         self._write_output_report(
-            b'\x01', b'\x30', pattern.to_bytes(1, byteorder='big'))
+            b'\x01', b'\x30', pattern.to_bytes(1, byteorder='little'))
 
 
 if __name__ == '__main__':
