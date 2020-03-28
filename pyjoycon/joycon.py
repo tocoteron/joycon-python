@@ -30,15 +30,18 @@ class JoyCon:
         self._packet_number = 0
         self._PRODUCT_ID = product_id
         self._SERIAL_NUMBER = serial
-        if self.is_left():
-            self.set_accel_callibration(self._PRESET_L_ACCEL_OFFSET)
-            self.set_gyro_callibration(self._PRESET_L_GYRO_OFFSET)
-        else:
-            self.set_accel_callibration(self._PRESET_R_ACCEL_OFFSET)
-            self.set_gyro_callibration(self._PRESET_R_GYRO_OFFSET)
+
+        # TODO: Either remove or use as sanity check during callibration
+        #if self.is_left():
+        #    self.set_accel_callibration(self._PRESET_L_ACCEL_OFFSET)
+        #    self.set_gyro_callibration(self._PRESET_L_GYRO_OFFSET)
+        #else:
+        #    self.set_accel_callibration(self._PRESET_R_ACCEL_OFFSET)
+        #    self.set_gyro_callibration(self._PRESET_R_GYRO_OFFSET)
 
         # connect to joycon
         self._joycon_device = self._open(vendor_id, product_id, serial=None)
+        self._read_joycon_data()
         self._setup_sensors()
 
         # start talking with the joycon in a daemon thread
@@ -64,7 +67,7 @@ class JoyCon:
             self._joycon_device.close()
             self._joycon_device = None
 
-    def _read_input_report(self):
+    def _read_input_report(self) -> bytes:
         return self._joycon_device.read(self._INPUT_REPORT_SIZE)
 
     def _write_output_report(self, command, subcommand, argument):
@@ -75,11 +78,56 @@ class JoyCon:
                                   + argument)
         self._packet_number = (self._packet_number + 1) & 0xF
 
+    def _send_subcmd_get_response(self, subcommand, argument) -> (bool, bytes):
+        # TODO: handle subcmd when daemon is running
+        self._write_output_report(b'\x01', subcommand, argument)
+
+        report = self._read_input_report()
+        while report[0] != 0x21: # TODO, avoid this, await daemon instead
+            report = self._read_input_report()
+        assert report[1:2] != subcommand, "THREAD carefully" # TODO, remove, see the todo above
+
+        # TODO: determine if the cut bytes are worth anything
+
+        return report[13] & 0x80, report[13:] # (ack, data)
+
+    def _spi_flash_read(self, address, size) -> bytes:
+        assert size <= 0x1d
+        argument = address.to_bytes(4, "little") + size.to_bytes(1, "little")
+        ack, report = self._send_subcmd_get_response(b'\x10', argument)
+        if not ack:
+            raise IOError("After SPI read @ {address:#06x}: got NACK")
+
+        if report[:2] != b'\x90\x10':
+            raise IOError("Something else than the expected ACK was recieved!")
+        assert report[2:7] == argument, (report[2:5], argument)
+
+        return report[7:size+7]
+
     def _update_input_report(self):
         while True:
             self._input_report = self._read_input_report()
             for callback in self._input_hooks:
                 callback(self)
+
+    def _read_joycon_data(self):
+        color_data = self._spi_flash_read(0x6050, 6)
+        #stick_cal  = self._spi_flash_read(0x8012 if self.is_left else 0x801D, 8)  # TODO
+        imu_cal    = self._spi_flash_read(0x6020, 23) # factory data
+        #imu_cal    = self._spi_flash_read(0x8028, 23) # user data, TODO: use this if set
+        self.color_body = tuple(color_data[:3])
+        self.color_btn  = tuple(color_data[3:])
+
+        self.set_accel_callibration((
+            self._to_int16le_from_2bytes(imu_cal[0], imu_cal[1]),
+            self._to_int16le_from_2bytes(imu_cal[2], imu_cal[3]),
+            self._to_int16le_from_2bytes(imu_cal[4], imu_cal[5]),
+        ))
+        self.set_gyro_callibration((
+            self._to_int16le_from_2bytes(imu_cal[12], imu_cal[13]),
+            self._to_int16le_from_2bytes(imu_cal[14], imu_cal[15]),
+            self._to_int16le_from_2bytes(imu_cal[16], imu_cal[17]),
+        ))
 
     def _setup_sensors(self):
         # Enable 6 axis sensors
