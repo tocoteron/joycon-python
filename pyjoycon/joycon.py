@@ -26,7 +26,6 @@ class JoyCon:
 
         # setup internal state
         self._input_hooks = []
-        self._joycon_device = None
         self._input_report = bytes(self._INPUT_REPORT_SIZE)
         self._packet_number = 0
 
@@ -62,9 +61,9 @@ class JoyCon:
         return _joycon_device
 
     def _close(self):
-        if self._joycon_device:
+        if hasattr(self, "_joycon_device"):
             self._joycon_device.close()
-            self._joycon_device = None
+            del self._joycon_device
 
     def _read_input_report(self) -> bytes:
         return self._joycon_device.read(self._INPUT_REPORT_SIZE)
