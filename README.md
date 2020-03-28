@@ -96,6 +96,35 @@ joycon.get_status()
 
 `cython-hidapi` to use Bluetooth / HID connection in Python.
 
+
+## Button events
+
+We have a specialized class which tracks the state of the JoyCon buttons and
+provides changes as events. Here is an example of how it could be used with `pygame`:
+
+```python
+from pyjoycon import ButtonEventJoyCon, get_R_id
+import pygame
+
+joycon_id = get_R_id()
+joycon = ButtonEventJoyCon(*joycon_id)
+
+...
+
+while 1:
+    pygame.time.wait(int(1000/60))
+
+    ...
+
+    for event_type, status in joycon.events():
+        print(event_type, status)
+
+    ...
+
+    pygame.display.flip()
+```
+
+
 ## environments
 
 - macOS Mojave (10.14.6)
