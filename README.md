@@ -94,7 +94,9 @@ joycon.get_status()
 
 ```
 
-`cython-hidapi` to use Bluetooth / HID connection in Python.
+You need `cython-hidapi` to use Bluetooth / HID connection in Python.
+
+Alternatively, you can use `hid` instead if `cython-hidapi` fails to find your JoyCons.
 
 
 ## Gyroscope
