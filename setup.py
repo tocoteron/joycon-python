@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+from pyjoycon import __version__ as version
 
 
 with open('README.md') as f:
@@ -9,7 +10,7 @@ with open('LICENSE') as f:
 
 setup(
     name='joycon-python',
-    version='0.1.2',
+    version=version,
     description='Python driver for Nintendo Switch Joy-Con',
     long_description=readme,
     long_description_content_type='text/markdown',

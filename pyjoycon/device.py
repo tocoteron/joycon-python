@@ -1,57 +1,68 @@
 import hid
+from .constants import JOYCON_VENDOR_ID, JOYCON_PRODUCT_IDS
+from .constants import JOYCON_L_PRODUCT_ID, JOYCON_R_PRODUCT_ID
 
 
 def get_device_ids(debug=False):
     """
-    returns dictionary of id info
-
-    {
-        "R": {
-            "product": PRODUCT_ID,
-            "vendor": VENDOR_ID
-        },
-        "L": {
-            "product": PRODUCT_ID,
-            "vendor": VENDOR_ID
-        }
-    }
+    returns a list of tuples like `(vendor_id, product_id, serial_number)`
     """
     devices = hid.enumerate(0, 0)
-    R = {"vendor": None, "product": None}
-    L = {"vendor": None, "product": None}
 
+    out = []
     for device in devices:
-        prod = device['product_string']
-        if prod and "Joy-Con" in prod:
-            if debug:
-                print(prod)
-                print(f"product_id is {device['product_id']}")
-                print(f"vendor_id is {device['vendor_id']}")
+        vendor_id      = device["vendor_id"]
+        product_id     = device["product_id"]
+        product_string = device['product_string']
+        serial = device.get('serial') or device.get("serial_number")
 
-            if "R" in prod:
-                R["product"] = device['product_id']
-                R["vendor"] = device['vendor_id']
-            else:
-                L["product"] = device['product_id']
-                L["vendor"] = device['vendor_id']
-    return {"R": R, "L": L}
+        if vendor_id != JOYCON_VENDOR_ID:
+            continue
+        if product_id not in JOYCON_PRODUCT_IDS:
+            continue
+        if not product_string:
+            continue
+        if not product_string.startswith("Joy-Con"):
+            continue
 
+        out.append((vendor_id, product_id, serial))
 
-def get_ids(lr, **kw):
+        if debug:
+            print(product_string)
+            print(f"\tvendor_id  is {vendor_id!r}")
+            print(f"\tproduct_id is {product_id!r}")
+            print(f"\tserial     is {serial!r}")
+
+    return out
+
+def is_id_L(id):
+    return id[1] == JOYCON_L_PRODUCT_ID
+
+def get_ids_of_type(lr, **kw):
     """
-    returns tuple of `(vendor_id, product_id)`
+    returns a list of tuples like `(vendor_id, product_id, serial_number)`
 
     arg: lr : str : put `R` or `L`
     """
-    ids = get_device_ids(**kw)
-    return (ids[lr]["vendor"], ids[lr]["product"])
-
+    product_id = JOYCON_L_PRODUCT_ID if lr.lower() == "l" else JOYCON_R_PRODUCT_ID
+    return [i for i in get_device_ids(**kw) if i[1] == product_id]
 
 def get_R_ids(**kw):
-    """returns tuple of `(vendor_id, product_id)`"""
-    return get_ids("R", **kw)
-
+    """returns a list of tuple like `(vendor_id, product_id, serial_number)`"""
+    return get_ids_of_type("R", **kw)
 
 def get_L_ids(**kw):
-    """returns tuple of `(vendor_id, product_id)`"""
-    return get_ids("L", **kw)
+    """returns a list of tuple like `(vendor_id, product_id, serial_number)`"""
+    return get_ids_of_type("L", **kw)
+
+def get_R_id(**kw):
+    """returns a tuple like `(vendor_id, product_id, serial_number)`"""
+    ids = get_R_ids(**kw)
+    if not ids: return (None, None, None)
+    return ids[0]
+
+def get_L_id(**kw):
+    """returns a tuple like `(vendor_id, product_id, serial_number)`"""
+    ids = get_L_ids(**kw)
+    if not ids: return (None, None, None)
+    return ids[0]

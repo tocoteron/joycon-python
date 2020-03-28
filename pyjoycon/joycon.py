@@ -1,12 +1,9 @@
+from .constants import JOYCON_VENDOR_ID, JOYCON_PRODUCT_IDS, JOYCON_L_PRODUCT_ID
 import hid
 import time
 import threading
 
-
 class JoyCon:
-    VENDOR_ID = 0x057E
-    L_PRODUCT_ID = 0x2006
-    R_PRODUCT_ID = 0x2007
     _PRESET_L_ACCEL_OFFSET = (350, 0,  4081)
     _PRESET_R_ACCEL_OFFSET = (350, 0, -4081)
     _PRESET_L_GYRO_OFFSET = (0, 0, 0)
@@ -17,19 +14,21 @@ class JoyCon:
     _RUMBLE_DATA = b'\x00\x01\x40\x40\x00\x01\x40\x40'
 
     def __init__(self, vendor_id: int, product_id: int, serial: str = None):
-        if vendor_id != self.VENDOR_ID:
-            raise ValueError('vendor_id is invalid')
+        if vendor_id != JOYCON_VENDOR_ID:
+            raise ValueError(f'vendor_id is invalid: {vendor_id!r}')
 
-        if product_id not in (self.L_PRODUCT_ID, self.R_PRODUCT_ID):
-            raise ValueError('product_id is invalid')
+        if product_id not in JOYCON_PRODUCT_IDS:
+            raise ValueError(f'product_id is invalid: {product_id!r}')
+
+        self.vendor_id  = vendor_id
+        self.product_id = product_id
+        self.serial     = serial
 
         # setup internal state
         self._input_hooks = []
         self._joycon_device = None
         self._input_report = bytes(self._INPUT_REPORT_SIZE)
         self._packet_number = 0
-        self._PRODUCT_ID = product_id
-        self._SERIAL_NUMBER = serial
 
         # TODO: Either remove or use as sanity check during callibration
         #if self.is_left():
@@ -164,10 +163,10 @@ class JoyCon:
         return callback  # this makes it so you could use it as a decorator
 
     def is_left(self):
-        return self._PRODUCT_ID == self.L_PRODUCT_ID
+        return self.product_id == JOYCON_L_PRODUCT_ID
 
     def is_right(self):
-        return self._PRODUCT_ID == self.R_PRODUCT_ID
+        return self.product_id == JOYCON_R_PRODUCT_ID
 
     def get_battery_charging(self):
         return self._get_nbit_from_input_report(2, 4, 1)
@@ -382,7 +381,7 @@ class JoyCon:
 
 if __name__ == '__main__':
     import pyjoycon.device as d
-    ids = d.get_L_ids() if None not in d.get_L_ids() else d.get_R_ids()
+    ids = d.get_L_id() if None not in d.get_L_id() else d.get_R_id()
 
     if None not in ids:
         joycon = JoyCon(*ids)

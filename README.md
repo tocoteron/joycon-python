@@ -20,15 +20,15 @@ cd joycon-python/
 python pyjoycon/joycon.py
 ```
 
-or Use as module
+or use as module
 
 ```python
 from pyjoycon import device
 from pyjoycon.joycon import JoyCon
 
 
-ids = device.get_ids("R")
-joycon = JoyCon(*ids)
+joycon_id = device.get_R_id()
+joycon = JoyCon(*joycon_id)
 
 joycon.get_status()
 ```
