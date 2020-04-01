@@ -8,7 +8,7 @@ class GyroTrackingJoyCon(PythonicJoyCon):
         super().__init__(*args, simple_mode=False, **kwargs)
 
         # set internal state:
-        self.re_center()
+        self.reset_orientation()
 
         # register the update callback
         self.register_update_hook(self._gyro_update_hook)
@@ -45,7 +45,7 @@ class GyroTrackingJoyCon(PythonicJoyCon):
         self.is_calibrating = False
         self.set_gyro_callibration(gyro_offset)
 
-    def re_center(self):
+    def reset_orientation(self):
         self.direction_X = vec3(1, 0, 0)
         self.direction_Y = vec3(0, 1, 0)
         self.direction_Z = vec3(0, 0, 1)
