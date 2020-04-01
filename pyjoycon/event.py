@@ -5,9 +5,12 @@ class ButtonEventJoyCon(PythonicJoyCon):
         super().__init__(*args, **kwargs)
 
         self._events_buffer = []  # TODO: perhaps use a deque instead?
+
         self._event_handlers = {}
         self._event_track_sticks = track_sticks
 
+        self._previous_stick_l_btn = 0
+        self._previous_stick_r_btn = 0
         self._previous_stick_r  = self._previous_stick_l  = (0, 0)
         self._previous_r        = self._previous_l        = 0
         self._previous_zr       = self._previous_zl       = 0
@@ -32,10 +35,10 @@ class ButtonEventJoyCon(PythonicJoyCon):
     @staticmethod
     def _event_tracking_update_hook_right(self):
         if self._event_track_sticks:
-            pressed = self.stick_r
-            if self._previous_stick_r != pressed:
-                self._previous_stick_r = pressed
-                self._events_buffer.append(("stick_r", pressed))
+            pressed = self.stick_r_btn
+            if self._previous_stick_r_btn != pressed:
+                self._previous_stick_r_btn = pressed
+                self._events_buffer.append(("stick_r_btn", pressed))
         pressed = self.r
         if self._previous_r != pressed:
             self._previous_r = pressed
@@ -80,10 +83,10 @@ class ButtonEventJoyCon(PythonicJoyCon):
     @staticmethod
     def _event_tracking_update_hook_left(self):
         if self._event_track_sticks:
-            pressed = self.stick_l
-            if self._previous_stick_l != pressed:
-                self._previous_stick_l = pressed
-                self._events_buffer.append(("stick_l", pressed))
+            pressed = self.stick_l_btn
+            if self._previous_stick_l_btn != pressed:
+                self._previous_stick_l_btn = pressed
+                self._events_buffer.append(("stick_l_btn", pressed))
         pressed = self.l
         if self._previous_l != pressed:
             self._previous_l = pressed
