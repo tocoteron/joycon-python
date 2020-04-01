@@ -1,4 +1,4 @@
-from pyjoycon.wrappers import PythonicJoyCon
+from .wrappers import PythonicJoyCon
 from glm import vec2, vec3, quat, angleAxis, eulerAngles
 from typing import Optional
 import time

@@ -1,4 +1,4 @@
-from pyjoycon.joycon import JoyCon
+from .joycon import JoyCon
 
 
 # Preferably, this class gets merged into the
