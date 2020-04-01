@@ -2,16 +2,21 @@ from .constants import JOYCON_VENDOR_ID, JOYCON_PRODUCT_IDS, JOYCON_L_PRODUCT_ID
 import hid
 import time
 import threading
+from typing import Optional
+
+# TODO: disconnect, power off sequence
 
 class JoyCon:
-    _PRESET_L_ACCEL_OFFSET = (350, 0,  4081)
-    _PRESET_R_ACCEL_OFFSET = (350, 0, -4081)
-    _PRESET_L_GYRO_OFFSET = (0, 0, 0)
-    _PRESET_R_GYRO_OFFSET = (0, 0, 0)
-
     _INPUT_REPORT_SIZE = 49
-    _INPUT_REPORT_PERIOD = 1.0 / 60.0
+    _INPUT_REPORT_PERIOD = 0.015
     _RUMBLE_DATA = b'\x00\x01\x40\x40\x00\x01\x40\x40'
+
+    vendor_id  : int
+    product_id : int
+    serial     : Optional[str]
+    simple_mode: bool
+    color_body : (int, int, int)
+    color_btn  : (int, int, int)
 
     def __init__(self, vendor_id: int, product_id: int, serial: str = None):
         if vendor_id != JOYCON_VENDOR_ID:
@@ -28,14 +33,8 @@ class JoyCon:
         self._input_hooks = []
         self._input_report = bytes(self._INPUT_REPORT_SIZE)
         self._packet_number = 0
-
-        # TODO: Either remove or use as sanity check during callibration
-        #if self.is_left():
-        #    self.set_accel_callibration(self._PRESET_L_ACCEL_OFFSET)
-        #    self.set_gyro_callibration(self._PRESET_L_GYRO_OFFSET)
-        #else:
-        #    self.set_accel_callibration(self._PRESET_R_ACCEL_OFFSET)
-        #    self.set_gyro_callibration(self._PRESET_R_GYRO_OFFSET)
+        self.set_accel_calibration((0, 0, 0), (1, 1, 1))
+        self.set_gyro_calibration((0, 0, 0), (1, 1, 1))
 
         # connect to joycon
         self._joycon_device = self._open(vendor_id, product_id, serial=None)
@@ -115,22 +114,41 @@ class JoyCon:
 
     def _read_joycon_data(self):
         color_data = self._spi_flash_read(0x6050, 6)
-        #stick_cal  = self._spi_flash_read(0x8012 if self.is_left else 0x801D, 8)  # TODO
-        imu_cal    = self._spi_flash_read(0x6020, 23) # factory data
-        #imu_cal    = self._spi_flash_read(0x8028, 23) # user data, TODO: use this if set
+        #stick_cal  = self._spi_flash_read(0x8012 if self.is_left else 0x801D, 8)  # TODO, this
+
+        # user IME data
+        if self._spi_flash_read(0x8026, 2) == b"\xB2\xA1":
+            print(f"Calibrate {self.serial} IME with user data")
+            imu_cal = self._spi_flash_read(0x8028, 24)
+
+        # factory IME data
+        else:
+            print(f"Calibrate {self.serial} IME with factory data")
+            imu_cal = self._spi_flash_read(0x6020, 24)
+
         self.color_body = tuple(color_data[:3])
         self.color_btn  = tuple(color_data[3:])
 
-        self.set_accel_callibration((
-            self._to_int16le_from_2bytes(imu_cal[0], imu_cal[1]),
-            self._to_int16le_from_2bytes(imu_cal[2], imu_cal[3]),
-            self._to_int16le_from_2bytes(imu_cal[4], imu_cal[5]),
-        ))
-        self.set_gyro_callibration((
-            self._to_int16le_from_2bytes(imu_cal[12], imu_cal[13]),
-            self._to_int16le_from_2bytes(imu_cal[14], imu_cal[15]),
-            self._to_int16le_from_2bytes(imu_cal[16], imu_cal[17]),
-        ))
+        self.set_accel_calibration((
+                self._to_int16le_from_2bytes(imu_cal[ 0], imu_cal[ 1]),
+                self._to_int16le_from_2bytes(imu_cal[ 2], imu_cal[ 3]),
+                self._to_int16le_from_2bytes(imu_cal[ 4], imu_cal[ 5]),
+            ), (
+                self._to_int16le_from_2bytes(imu_cal[ 6], imu_cal[ 7]),
+                self._to_int16le_from_2bytes(imu_cal[ 8], imu_cal[ 9]),
+                self._to_int16le_from_2bytes(imu_cal[10], imu_cal[11]),
+            )
+        )
+        self.set_gyro_calibration((
+                self._to_int16le_from_2bytes(imu_cal[12], imu_cal[13]),
+                self._to_int16le_from_2bytes(imu_cal[14], imu_cal[15]),
+                self._to_int16le_from_2bytes(imu_cal[16], imu_cal[17]),
+            ), (
+                self._to_int16le_from_2bytes(imu_cal[18], imu_cal[19]),
+                self._to_int16le_from_2bytes(imu_cal[20], imu_cal[21]),
+                self._to_int16le_from_2bytes(imu_cal[22], imu_cal[23]),
+            )
+        )
 
     def _setup_sensors(self):
         # Enable 6 axis sensors
@@ -152,15 +170,27 @@ class JoyCon:
     def __del__(self):
         self._close()
 
-    def set_gyro_callibration(self, offset_xyz):
-        self._GYRO_OFFSET_X = offset_xyz[0]
-        self._GYRO_OFFSET_Y = offset_xyz[1]
-        self._GYRO_OFFSET_Z = offset_xyz[2]
+    def set_gyro_calibration(self, offset_xyz, coeff_xyz):
+        print("set_gyro_calibration:", offset_xyz, coeff_xyz) # TODO: remove this
+        if offset_xyz:
+            self._GYRO_OFFSET_X, \
+            self._GYRO_OFFSET_Y, \
+            self._GYRO_OFFSET_Z = offset_xyz
+        if coeff_xyz:
+            self._GYRO_COEFF_X = 0x343b / coeff_xyz[0] if coeff_xyz[0] != 0x343b else 1
+            self._GYRO_COEFF_Y = 0x343b / coeff_xyz[1] if coeff_xyz[1] != 0x343b else 1
+            self._GYRO_COEFF_Z = 0x343b / coeff_xyz[2] if coeff_xyz[2] != 0x343b else 1
 
-    def set_accel_callibration(self, offset_xyz):
-        self._ACCEL_OFFSET_X = offset_xyz[0]
-        self._ACCEL_OFFSET_Y = offset_xyz[1]
-        self._ACCEL_OFFSET_Z = offset_xyz[2]
+    def set_accel_calibration(self, offset_xyz, coeff_xyz):
+        print("set_accel_calibration:", offset_xyz, coeff_xyz) # TODO: remove this
+        if offset_xyz:
+            self._ACCEL_OFFSET_X, \
+            self._ACCEL_OFFSET_Y, \
+            self._ACCEL_OFFSET_Z = offset_xyz
+        if coeff_xyz:
+            self._ACCEL_COEFF_X = 0x4000 / coeff_xyz[0] if coeff_xyz[0] != 0x4000 else 1
+            self._ACCEL_COEFF_Y = 0x4000 / coeff_xyz[1] if coeff_xyz[1] != 0x4000 else 1
+            self._ACCEL_COEFF_Z = 0x4000 / coeff_xyz[2] if coeff_xyz[2] != 0x4000 else 1
 
     def register_update_hook(self, callback):
         self._input_hooks.append(callback)
@@ -269,7 +299,7 @@ class JoyCon:
         data = self._to_int16le_from_2bytes(
             self._input_report[13 + sample_idx * 12],
             self._input_report[14 + sample_idx * 12])
-        return data - self._ACCEL_OFFSET_X
+        return (data - self._ACCEL_OFFSET_X) * self._ACCEL_COEFF_X
 
     def get_accel_y(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
@@ -277,7 +307,7 @@ class JoyCon:
         data = self._to_int16le_from_2bytes(
             self._input_report[15 + sample_idx * 12],
             self._input_report[16 + sample_idx * 12])
-        return data - self._ACCEL_OFFSET_Y
+        return (data - self._ACCEL_OFFSET_Y) * self._ACCEL_COEFF_Y
 
     def get_accel_z(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
@@ -285,7 +315,7 @@ class JoyCon:
         data = self._to_int16le_from_2bytes(
             self._input_report[17 + sample_idx * 12],
             self._input_report[18 + sample_idx * 12])
-        return data - self._ACCEL_OFFSET_Z
+        return (data - self._ACCEL_OFFSET_Z) * self._ACCEL_COEFF_Z
 
     def get_gyro_x(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
@@ -293,7 +323,7 @@ class JoyCon:
         data = self._to_int16le_from_2bytes(
             self._input_report[19 + sample_idx * 12],
             self._input_report[20 + sample_idx * 12])
-        return data - self._GYRO_OFFSET_X
+        return (data - self._GYRO_OFFSET_X) * self._GYRO_COEFF_X
 
     def get_gyro_y(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
@@ -301,7 +331,7 @@ class JoyCon:
         data = self._to_int16le_from_2bytes(
             self._input_report[21 + sample_idx * 12],
             self._input_report[22 + sample_idx * 12])
-        return data - self._GYRO_OFFSET_Y
+        return (data - self._GYRO_OFFSET_Y) * self._GYRO_COEFF_Y
 
     def get_gyro_z(self, sample_idx=0):
         if sample_idx not in (0, 1, 2):
@@ -309,7 +339,7 @@ class JoyCon:
         data = self._to_int16le_from_2bytes(
             self._input_report[23 + sample_idx * 12],
             self._input_report[24 + sample_idx * 12])
-        return data - self._GYRO_OFFSET_Z
+        return (data - self._GYRO_OFFSET_Z) * self._GYRO_COEFF_Z
 
     def get_status(self) -> dict:
         return {
