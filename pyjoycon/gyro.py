@@ -4,6 +4,11 @@ from typing import Optional
 import time
 
 class GyroTrackingJoyCon(PythonicJoyCon):
+    """
+    A specialized class based on PythonicJoyCon which tracks the gyroscope data
+    and deduces the current rotation of the JoyCon. Can be used to create a pointer
+    rotate an object or pointin a direction. Comes with the need to be calibrated.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, simple_mode=False, **kwargs)
 
