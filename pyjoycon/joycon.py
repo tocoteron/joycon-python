@@ -50,7 +50,8 @@ class JoyCon:
     def _open(self, vendor_id, product_id, serial):
         try:
             if hasattr(hid, "device"):  # hidapi
-                _joycon_device = hid.device(vendor_id, product_id, serial)
+                _joycon_device = hid.device()
+                _joycon_device.open(vendor_id, product_id, serial)
             elif hasattr(hid, "Device"):  # hid
                 _joycon_device = hid.Device(vendor_id, product_id, serial)
             else:
