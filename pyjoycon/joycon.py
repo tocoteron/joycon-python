@@ -1,52 +1,69 @@
 import hid
 import time
 import threading
-import pyjoycon.device as d
 
 
 class JoyCon:
     VENDOR_ID = 0x057E
     L_PRODUCT_ID = 0x2006
     R_PRODUCT_ID = 0x2007
-    _L_ACCEL_OFFSET_X = 350
-    _L_ACCEL_OFFSET_Y = 0
-    _L_ACCEL_OFFSET_Z = 4081
-    _R_ACCEL_OFFSET_X = 350
-    _R_ACCEL_OFFSET_Y = 0
-    _R_ACCEL_OFFSET_Z = -4081
+    _PRESET_L_ACCEL_OFFSET = (350, 0,  4081)
+    _PRESET_R_ACCEL_OFFSET = (350, 0, -4081)
+    _PRESET_L_GYRO_OFFSET = (0, 0, 0)
+    _PRESET_R_GYRO_OFFSET = (0, 0, 0)
 
     _INPUT_REPORT_SIZE = 49
-    _INPUT_REPORT_FREQ = 1.0 / 60.0
+    _INPUT_REPORT_PERIOD = 1.0 / 60.0
     _RUMBLE_DATA = b'\x00\x01\x40\x40\x00\x01\x40\x40'
 
-    def __init__(self, vendor_id, product_id):
+    def __init__(self, vendor_id: int, product_id: int, serial: str = None):
         if vendor_id != self.VENDOR_ID:
             raise ValueError('vendor_id is invalid')
 
-        if product_id not in [self.L_PRODUCT_ID, self.R_PRODUCT_ID]:
+        if product_id not in (self.L_PRODUCT_ID, self.R_PRODUCT_ID):
             raise ValueError('product_id is invalid')
 
-        self._joycon_device = self._open(vendor_id, product_id)
-        self._PRODUCT_ID = product_id
+        # setup internal state
+        self._input_hooks = []
+        self._joycon_device = None
+        self._input_report = bytes(self._INPUT_REPORT_SIZE)
         self._packet_number = 0
+        self._PRODUCT_ID = product_id
+        self._SERIAL_NUMBER = serial
+        if self.is_left():
+            self.set_accel_callibration(self._PRESET_L_ACCEL_OFFSET)
+            self.set_gyro_callibration(self._PRESET_L_GYRO_OFFSET)
+        else:
+            self.set_accel_callibration(self._PRESET_R_ACCEL_OFFSET)
+            self.set_gyro_callibration(self._PRESET_R_GYRO_OFFSET)
+
+        # connect to joycon
+        self._joycon_device = self._open(vendor_id, product_id, serial=None)
         self._setup_sensors()
 
-        self._input_report = bytes(self._INPUT_REPORT_SIZE)
+        # start talking with the joycon in a daemon thread
         self._update_input_report_thread = threading.Thread(
             target=self._update_input_report)
         self._update_input_report_thread.setDaemon(True)
         self._update_input_report_thread.start()
 
-    def _open(self, vendor_id, product_id):
-        _joycon_device = hid.device()
+    def _open(self, vendor_id, product_id, serial):
         try:
-            _joycon_device.open(vendor_id, product_id)
-        except IOError:
-            raise IOError('joycon connect failed')
+            if hasattr(hid, "device"):  # hidapi
+                _joycon_device = hid.device()
+                _joycon_device.open(vendor_id, product_id, serial)
+            elif hasattr(hid, "Device"):  # hid
+                _joycon_device = hid.Device(vendor_id, product_id, serial)
+            else:
+                raise Exception("Implementation of hid is not recognized!")
+        except IOError as e:
+            raise IOError('joycon connect failed') from e
         return _joycon_device
 
     def _close(self):
-        self._joycon_device.close()
+        if self._joycon_device:
+            self._joycon_device.close()
+            self._joycon_device = None
 
     def _read_input_report(self):
         return self._joycon_device.read(self._INPUT_REPORT_SIZE)
@@ -62,6 +79,8 @@ class JoyCon:
     def _update_input_report(self):
         while True:
             self._input_report = self._read_input_report()
+            for callback in self._input_hooks:
+                callback(self)
 
     def _setup_sensors(self):
         # Enable 6 axis sensors
@@ -71,7 +90,8 @@ class JoyCon:
         # Change format of input report
         self._write_output_report(b'\x01', b'\x03', b'\x30')
 
-    def _to_int16le_from_2bytes(self, hbytebe, lbytebe):
+    @staticmethod
+    def _to_int16le_from_2bytes(hbytebe, lbytebe):
         uint16le = (lbytebe << 8) | hbytebe
         int16le = uint16le if uint16le < 32768 else uint16le - 65536
         return int16le
@@ -81,6 +101,20 @@ class JoyCon:
 
     def __del__(self):
         self._close()
+
+    def set_gyro_callibration(self, offset_xyz):
+        self._GYRO_OFFSET_X = offset_xyz[0]
+        self._GYRO_OFFSET_Y = offset_xyz[1]
+        self._GYRO_OFFSET_Z = offset_xyz[2]
+
+    def set_accel_callibration(self, offset_xyz):
+        self._ACCEL_OFFSET_X = offset_xyz[0]
+        self._ACCEL_OFFSET_Y = offset_xyz[1]
+        self._ACCEL_OFFSET_Z = offset_xyz[2]
+
+    def register_update_hook(self, callback):
+        self._input_hooks.append(callback)
+        return callback  # this makes it so you could use it as a decorator
 
     def is_left(self):
         return self._PRODUCT_ID == self.L_PRODUCT_ID
@@ -176,45 +210,54 @@ class JoyCon:
         return self._get_nbit_from_input_report(10, 4, 4) | (self._get_nbit_from_input_report(11, 0, 8) << 4)
 
     def get_accel_x(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return (self._to_int16le_from_2bytes(self._get_nbit_from_input_report(13 + sample_idx * 12, 0, 8),
-                                             self._get_nbit_from_input_report(14 + sample_idx * 12, 0, 8))
-                - (self._L_ACCEL_OFFSET_X if self.is_left() else self._R_ACCEL_OFFSET_X))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(13 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(14 + sample_idx * 12, 0, 8))
+        return data - self._ACCEL_OFFSET_X
 
     def get_accel_y(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return (self._to_int16le_from_2bytes(self._get_nbit_from_input_report(15 + sample_idx * 12, 0, 8),
-                                             self._get_nbit_from_input_report(16 + sample_idx * 12, 0, 8))
-                - (self._L_ACCEL_OFFSET_Y if self.is_left() else self._R_ACCEL_OFFSET_Y))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(15 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(16 + sample_idx * 12, 0, 8))
+        return data - self._ACCEL_OFFSET_Y
 
     def get_accel_z(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return (self._to_int16le_from_2bytes(self._get_nbit_from_input_report(17 + sample_idx * 12, 0, 8),
-                                             self._get_nbit_from_input_report(18 + sample_idx * 12, 0, 8))
-                - (self._L_ACCEL_OFFSET_Z if self.is_left() else self._R_ACCEL_OFFSET_Z))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(17 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(18 + sample_idx * 12, 0, 8))
+        return data - self._ACCEL_OFFSET_Z
 
     def get_gyro_x(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(19 + sample_idx * 12, 0, 8),
-                                            self._get_nbit_from_input_report(20 + sample_idx * 12, 0, 8))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(19 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(20 + sample_idx * 12, 0, 8))
+        return data - self._GYRO_OFFSET_X
 
     def get_gyro_y(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(21 + sample_idx * 12, 0, 8),
-                                            self._get_nbit_from_input_report(22 + sample_idx * 12, 0, 8))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(21 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(22 + sample_idx * 12, 0, 8))
+        return data - self._GYRO_OFFSET_Y
 
     def get_gyro_z(self, sample_idx=0):
-        if sample_idx not in [0, 1, 2]:
+        if sample_idx not in (0, 1, 2):
             raise IndexError('sample_idx should be between 0 and 2')
-        return self._to_int16le_from_2bytes(self._get_nbit_from_input_report(23 + sample_idx * 12, 0, 8),
-                                            self._get_nbit_from_input_report(24 + sample_idx * 12, 0, 8))
+        data = self._to_int16le_from_2bytes(
+            self._get_nbit_from_input_report(23 + sample_idx * 12, 0, 8),
+            self._get_nbit_from_input_report(24 + sample_idx * 12, 0, 8))
+        return data - self._GYRO_OFFSET_Z
 
-    def get_status(self):
+    def get_status(self) -> dict:
         return {
             "battery": {
                 "charging": self.get_battery_charging(),
@@ -273,20 +316,21 @@ class JoyCon:
             },
         }
 
-    def set_player_lamp_on(self, on_pattern):
+    def set_player_lamp_on(self, on_pattern: int):
         self._write_output_report(
             b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='big'))
 
-    def set_player_lamp_flashing(self, flashing_pattern):
+    def set_player_lamp_flashing(self, flashing_pattern: int):
         self._write_output_report(
             b'\x01', b'\x30', ((flashing_pattern & 0xF) << 4).to_bytes(1, byteorder='big'))
 
-    def set_player_lamp(self, pattern):
+    def set_player_lamp(self, pattern: int):
         self._write_output_report(
             b'\x01', b'\x30', pattern.to_bytes(1, byteorder='big'))
 
 
 if __name__ == '__main__':
+    import pyjoycon.device as d
     ids = d.get_L_ids() if None not in d.get_L_ids() else d.get_R_ids()
 
     if None not in ids:

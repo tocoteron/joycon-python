@@ -1,7 +1,7 @@
 import hid
 
 
-def get_device_ids():
+def get_device_ids(debug=False):
     """
     returns dictionary of id info
 
@@ -22,10 +22,11 @@ def get_device_ids():
 
     for device in devices:
         prod = device['product_string']
-        if "Joy-Con" in prod:
-            print(prod)
-            print(f"product_id is {device['product_id']}")
-            print(f"vendor_id is {device['vendor_id']}")
+        if prod and "Joy-Con" in prod:
+            if debug:
+                print(prod)
+                print(f"product_id is {device['product_id']}")
+                print(f"vendor_id is {device['vendor_id']}")
 
             if "R" in prod:
                 R["product"] = device['product_id']
@@ -36,21 +37,21 @@ def get_device_ids():
     return {"R": R, "L": L}
 
 
-def get_ids(lr):
+def get_ids(lr, **kw):
     """
     returns tuple of `(vendor_id, product_id)`
 
     arg: lr : str : put `R` or `L`
     """
-    ids = get_device_ids()
+    ids = get_device_ids(**kw)
     return (ids[lr]["vendor"], ids[lr]["product"])
 
 
-def get_R_ids():
+def get_R_ids(**kw):
     """returns tuple of `(vendor_id, product_id)`"""
-    return get_ids("R")
+    return get_ids("R", **kw)
 
 
-def get_L_ids():
+def get_L_ids(**kw):
     """returns tuple of `(vendor_id, product_id)`"""
-    return get_ids("L")
+    return get_ids("L", **kw)
