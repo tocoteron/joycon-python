@@ -1,10 +1,12 @@
-from .constants import JOYCON_VENDOR_ID, JOYCON_PRODUCT_IDS, JOYCON_L_PRODUCT_ID
+from .constants import JOYCON_VENDOR_ID, JOYCON_PRODUCT_IDS
+from .constants import JOYCON_L_PRODUCT_ID, JOYCON_R_PRODUCT_ID
 import hid
 import time
 import threading
 from typing import Optional
 
 # TODO: disconnect, power off sequence
+
 
 class JoyCon:
     _INPUT_REPORT_SIZE = 49
@@ -18,16 +20,17 @@ class JoyCon:
     color_body : (int, int, int)
     color_btn  : (int, int, int)
 
-    def __init__(self, vendor_id: int, product_id: int, serial: str = None):
+    def __init__(self, vendor_id: int, product_id: int, serial: str = None, simple_mode=False):
         if vendor_id != JOYCON_VENDOR_ID:
             raise ValueError(f'vendor_id is invalid: {vendor_id!r}')
 
         if product_id not in JOYCON_PRODUCT_IDS:
             raise ValueError(f'product_id is invalid: {product_id!r}')
 
-        self.vendor_id  = vendor_id
-        self.product_id = product_id
-        self.serial     = serial
+        self.vendor_id   = vendor_id
+        self.product_id  = product_id
+        self.serial      = serial
+        self.simple_mode = simple_mode  # TODO: It's for reporting mode 0x3f
 
         # setup internal state
         self._input_hooks = []
@@ -69,11 +72,13 @@ class JoyCon:
 
     def _write_output_report(self, command, subcommand, argument):
         # TODO: add documentation
-        self._joycon_device.write(command
-                                  + self._packet_number.to_bytes(1, byteorder='little')
-                                  + self._RUMBLE_DATA
-                                  + subcommand
-                                  + argument)
+        self._joycon_device.write(b''.join([
+            command,
+            self._packet_number.to_bytes(1, byteorder='little'),
+            self._RUMBLE_DATA,
+            subcommand,
+            argument,
+        ]))
         self._packet_number = (self._packet_number + 1) & 0xF
 
     def _send_subcmd_get_response(self, subcommand, argument) -> (bool, bytes):
@@ -81,13 +86,15 @@ class JoyCon:
         self._write_output_report(b'\x01', subcommand, argument)
 
         report = self._read_input_report()
-        while report[0] != 0x21: # TODO, avoid this, await daemon instead
+        while report[0] != 0x21:  # TODO, avoid this, await daemon instead
             report = self._read_input_report()
-        assert report[1:2] != subcommand, "THREAD carefully" # TODO, remove, see the todo above
+
+        # TODO, remove, see the todo above
+        assert report[1:2] != subcommand, "THREAD carefully"
 
         # TODO: determine if the cut bytes are worth anything
 
-        return report[13] & 0x80, report[13:] # (ack, data)
+        return report[13] & 0x80, report[13:]  # (ack, data)
 
     def _spi_flash_read(self, address, size) -> bytes:
         assert size <= 0x1d
@@ -105,8 +112,10 @@ class JoyCon:
     def _update_input_report(self):  # daemon thread
         while True:
             report = self._read_input_report()
-            while report[0] != 0x30: # TODO, handle input reports of type 0x21 and 0x3f
+            # TODO, handle input reports of type 0x21 and 0x3f
+            while report[0] != 0x30:
                 report = self._read_input_report()
+
             self._input_report = report
 
             for callback in self._input_hooks:
@@ -114,16 +123,19 @@ class JoyCon:
 
     def _read_joycon_data(self):
         color_data = self._spi_flash_read(0x6050, 6)
-        #stick_cal  = self._spi_flash_read(0x8012 if self.is_left else 0x801D, 8)  # TODO, this
+
+        # TODO: use this
+        # stick_cal_addr = 0x8012 if self.is_left else 0x801D
+        # stick_cal  = self._spi_flash_read(stick_cal_addr, 8)
 
         # user IME data
         if self._spi_flash_read(0x8026, 2) == b"\xB2\xA1":
-            print(f"Calibrate {self.serial} IME with user data")
+            # print(f"Calibrate {self.serial} IME with user data")
             imu_cal = self._spi_flash_read(0x8028, 24)
 
         # factory IME data
         else:
-            print(f"Calibrate {self.serial} IME with factory data")
+            # print(f"Calibrate {self.serial} IME with factory data")
             imu_cal = self._spi_flash_read(0x6020, 24)
 
         self.color_body = tuple(color_data[:3])
@@ -165,32 +177,33 @@ class JoyCon:
         return int16le
 
     def _get_nbit_from_input_report(self, offset_byte, offset_bit, nbit):
-        return (self._input_report[offset_byte] >> offset_bit) & ((1 << nbit) - 1)
+        byte = self._input_report[offset_byte]
+        return (byte >> offset_bit) & ((1 << nbit) - 1)
 
     def __del__(self):
         self._close()
 
-    def set_gyro_calibration(self, offset_xyz, coeff_xyz):
-        print("set_gyro_calibration:", offset_xyz, coeff_xyz) # TODO: remove this
+    def set_gyro_calibration(self, offset_xyz=None, coeff_xyz=None):
         if offset_xyz:
             self._GYRO_OFFSET_X, \
             self._GYRO_OFFSET_Y, \
             self._GYRO_OFFSET_Z = offset_xyz
         if coeff_xyz:
-            self._GYRO_COEFF_X = 0x343b / coeff_xyz[0] if coeff_xyz[0] != 0x343b else 1
-            self._GYRO_COEFF_Y = 0x343b / coeff_xyz[1] if coeff_xyz[1] != 0x343b else 1
-            self._GYRO_COEFF_Z = 0x343b / coeff_xyz[2] if coeff_xyz[2] != 0x343b else 1
+            cx, cy, cz = coeff_xyz
+            self._GYRO_COEFF_X = 0x343b / cx if cx != 0x343b else 1
+            self._GYRO_COEFF_Y = 0x343b / cy if cy != 0x343b else 1
+            self._GYRO_COEFF_Z = 0x343b / cz if cz != 0x343b else 1
 
-    def set_accel_calibration(self, offset_xyz, coeff_xyz):
-        print("set_accel_calibration:", offset_xyz, coeff_xyz) # TODO: remove this
+    def set_accel_calibration(self, offset_xyz=None, coeff_xyz=None):
         if offset_xyz:
             self._ACCEL_OFFSET_X, \
             self._ACCEL_OFFSET_Y, \
             self._ACCEL_OFFSET_Z = offset_xyz
         if coeff_xyz:
-            self._ACCEL_COEFF_X = 0x4000 / coeff_xyz[0] if coeff_xyz[0] != 0x4000 else 1
-            self._ACCEL_COEFF_Y = 0x4000 / coeff_xyz[1] if coeff_xyz[1] != 0x4000 else 1
-            self._ACCEL_COEFF_Z = 0x4000 / coeff_xyz[2] if coeff_xyz[2] != 0x4000 else 1
+            cx, cy, cz = coeff_xyz
+            self._ACCEL_COEFF_X = 0x4000 / cx if cx != 0x4000 else 1
+            self._ACCEL_COEFF_Y = 0x4000 / cy if cy != 0x4000 else 1
+            self._ACCEL_COEFF_Z = 0x4000 / cz if cz != 0x4000 else 1
 
     def register_update_hook(self, callback):
         self._input_hooks.append(callback)
@@ -402,15 +415,18 @@ class JoyCon:
 
     def set_player_lamp_on(self, on_pattern: int):
         self._write_output_report(
-            b'\x01', b'\x30', (on_pattern & 0xF).to_bytes(1, byteorder='little'))
+            b'\x01', b'\x30',
+            (on_pattern & 0xF).to_bytes(1, byteorder='little'))
 
     def set_player_lamp_flashing(self, flashing_pattern: int):
         self._write_output_report(
-            b'\x01', b'\x30', ((flashing_pattern & 0xF) << 4).to_bytes(1, byteorder='little'))
+            b'\x01', b'\x30',
+            ((flashing_pattern & 0xF) << 4).to_bytes(1, byteorder='little'))
 
     def set_player_lamp(self, pattern: int):
         self._write_output_report(
-            b'\x01', b'\x30', pattern.to_bytes(1, byteorder='little'))
+            b'\x01', b'\x30',
+            pattern.to_bytes(1, byteorder='little'))
 
 
 if __name__ == '__main__':

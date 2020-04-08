@@ -1,5 +1,6 @@
 from .wrappers import PythonicJoyCon
 
+
 class ButtonEventJoyCon(PythonicJoyCon):
     def __init__(self, *args, track_sticks=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,7 +29,7 @@ class ButtonEventJoyCon(PythonicJoyCon):
         else:
             self.register_update_hook(self._event_tracking_update_hook_right)
 
-    def joycon_button_event(self, button, state): # overridable
+    def joycon_button_event(self, button, state):  # overridable
         self._events_buffer.append((button, state))
 
     def events(self):

@@ -13,7 +13,7 @@ def get_device_ids(debug=False):
     for device in devices:
         vendor_id      = device["vendor_id"]
         product_id     = device["product_id"]
-        product_string = device['product_string']
+        product_string = device["product_string"]
         serial = device.get('serial') or device.get("serial_number")
 
         if vendor_id != JOYCON_VENDOR_ID:
@@ -35,8 +35,10 @@ def get_device_ids(debug=False):
 
     return out
 
+
 def is_id_L(id):
     return id[1] == JOYCON_L_PRODUCT_ID
+
 
 def get_ids_of_type(lr, **kw):
     """
@@ -44,25 +46,34 @@ def get_ids_of_type(lr, **kw):
 
     arg: lr : str : put `R` or `L`
     """
-    product_id = JOYCON_L_PRODUCT_ID if lr.lower() == "l" else JOYCON_R_PRODUCT_ID
+    if lr.lower() == "l":
+        product_id = JOYCON_L_PRODUCT_ID
+    else:
+        product_id = JOYCON_R_PRODUCT_ID
     return [i for i in get_device_ids(**kw) if i[1] == product_id]
+
 
 def get_R_ids(**kw):
     """returns a list of tuple like `(vendor_id, product_id, serial_number)`"""
     return get_ids_of_type("R", **kw)
 
+
 def get_L_ids(**kw):
     """returns a list of tuple like `(vendor_id, product_id, serial_number)`"""
     return get_ids_of_type("L", **kw)
 
+
 def get_R_id(**kw):
     """returns a tuple like `(vendor_id, product_id, serial_number)`"""
     ids = get_R_ids(**kw)
-    if not ids: return (None, None, None)
+    if not ids:
+        return (None, None, None)
     return ids[0]
+
 
 def get_L_id(**kw):
     """returns a tuple like `(vendor_id, product_id, serial_number)`"""
     ids = get_L_ids(**kw)
-    if not ids: return (None, None, None)
+    if not ids:
+        return (None, None, None)
     return ids[0]
