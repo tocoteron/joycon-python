@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
-from pyjoycon import __version__ as version
 
+version = "0.2.3"
 
 with open('README.md') as f:
     readme = f.read()
@@ -26,7 +26,7 @@ setup(
     url='https://github.com/tokoroten-lab/joycon-python',
     license=license,
     packages=find_packages(),
-    install_requires=requirements,
+    # install_requires=requirements,
     classifiers=[
         'Programming Language :: Python :: 3.7'
     ]
