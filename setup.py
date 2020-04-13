@@ -19,7 +19,7 @@ setup(
     long_description_content_type='text/markdown',
     author='tokoroten-lab, atsukoba, pbsds',
     author_email=', '.join([
-        'tokoroten.lab@gmail.com'
+        'tokoroten.lab@gmail.com',
         'atsuya_kobayashi@yahoo.co.jp',
         'pbsds@hotmail.com',
     ]),
