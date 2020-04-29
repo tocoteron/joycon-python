@@ -68,7 +68,7 @@ class JoyCon:
             del self._joycon_device
 
     def _read_input_report(self) -> bytes:
-        return self._joycon_device.read(self._INPUT_REPORT_SIZE)
+        return bytes(self._joycon_device.read(self._INPUT_REPORT_SIZE))
 
     def _write_output_report(self, command, subcommand, argument):
         # TODO: add documentation
