@@ -17,7 +17,7 @@ Quick status check
 
 ```shell
 cd joycon-python/
-python pyjoycon/joycon.py
+python -m pyjoycon.joycon
 ```
 
 or use as module
