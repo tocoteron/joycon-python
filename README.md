@@ -115,7 +115,7 @@ for i in range(20):
     print("joycon rotation: ", joycon.rotation)
     print("joycon direction:", joycon.direction)
     print()
-    sleep(0.05)
+    time.sleep(0.05)
 ```
 
 
