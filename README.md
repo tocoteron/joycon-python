@@ -17,18 +17,16 @@ Quick status check
 
 ```shell
 cd joycon-python/
-python pyjoycon/joycon.py
+python -m pyjoycon.joycon
 ```
 
-or Use as module
+or use as module
 
 ```python
-from pyjoycon import device
-from pyjoycon.joycon import JoyCon
+from pyjoycon import JoyCon, get_R_id
 
-
-ids = device.get_ids("R")
-joycon = JoyCon(*ids)
+joycon_id = get_R_id()
+joycon = JoyCon(*joycon_id)
 
 joycon.get_status()
 ```
@@ -96,7 +94,70 @@ joycon.get_status()
 
 ```
 
-`cython-hidapi` to use Bluetooth / HID connection in Python.
+You need `cython-hidapi` to use Bluetooth / HID connection in Python.
+
+Alternatively, you can use `hid` instead if `cython-hidapi` fails to find your JoyCons.
+
+
+## Gyroscope
+
+We have a specialized class which tracks the gyroscope for you, and
+exposes this tracked state in a simplified manner:
+
+```python
+from pyjoycon import GyroTrackingJoyCon, get_R_id
+import time
+
+joycon_id = get_R_id()
+joycon = GyroTrackingJoyCon(*joycon_id)
+for i in range(20):
+    print("joycon pointer:  ", joycon.pointer)
+    print("joycon rotation: ", joycon.rotation)
+    print("joycon direction:", joycon.direction)
+    print()
+    sleep(0.05)
+```
+
+
+## Button events
+
+We have a specialized class which tracks the state of the JoyCon buttons and
+provides changes as events. Here is an example of how it could be used with `pygame`:
+
+```python
+from pyjoycon import ButtonEventJoyCon, get_R_id
+import pygame
+
+joycon_id = get_R_id()
+joycon = ButtonEventJoyCon(*joycon_id)
+
+...
+
+while 1:
+    pygame.time.wait(int(1000/60))
+
+    ...
+
+    for event_type, status in joycon.events():
+        print(event_type, status)
+
+    ...
+
+    pygame.display.flip()
+```
+
+
+## Combining multiple JoyCon helper classes
+
+```python
+import pyjoycon
+
+class MyJoyCon(
+        pyjoycon.GyroTrackingJoyCon,
+        pyjoycon.ButtonEventJoyCon,
+    ): pass
+```
+
 
 ## environments
 
