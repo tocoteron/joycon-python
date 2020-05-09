@@ -429,6 +429,9 @@ class JoyCon:
             b'\x01', b'\x30',
             pattern.to_bytes(1, byteorder='little'))
 
+    def disconnect_device(self):
+        self._write_output_report(b'\x01', b'\x06', b'\x00')
+
 
 if __name__ == '__main__':
     import pyjoycon.device as d

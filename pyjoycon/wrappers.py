@@ -49,6 +49,7 @@ class PythonicJoyCon(JoyCon):
     set_led_on       = JoyCon.set_player_lamp_on
     set_led_flashing = JoyCon.set_player_lamp_flashing
     set_led          = JoyCon.set_player_lamp
+    disconnect       = JoyCon.disconnect_device
 
     @property
     def stick_l(self):
