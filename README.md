@@ -5,6 +5,8 @@
 
 Python driver for Nintendo Switch Joy-Con
 
+We are referring to [dekuNukem/Nintendo_Switch_Reverse_Engineering](https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering)
+
 ## install
 
 ```shell
