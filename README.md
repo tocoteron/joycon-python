@@ -7,13 +7,13 @@ Python driver for Nintendo Switch Joy-Con
 
 We are referring to [dekuNukem/Nintendo_Switch_Reverse_Engineering](https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering)
 
-## install
+## Install
 
 ```shell
 pip install joycon-python
 ```
 
-## usage
+## Usage
 
 Quick status check
 
@@ -33,7 +33,7 @@ joycon = JoyCon(*joycon_id)
 joycon.get_status()
 ```
 
-## status values
+## Status values
 
 ```python
 {
@@ -161,7 +161,7 @@ class MyJoyCon(
 ```
 
 
-## environments
+## Environments
 
 - macOS Mojave (10.14.6)
 - Python (3.7.4)
