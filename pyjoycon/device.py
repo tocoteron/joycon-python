@@ -22,8 +22,6 @@ def get_device_ids(debug=False):
             continue
         if not product_string:
             continue
-        if not product_string.startswith("Joy-Con"):
-            continue
 
         out.append((vendor_id, product_id, serial))
 
