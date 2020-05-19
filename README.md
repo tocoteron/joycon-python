@@ -10,7 +10,7 @@ We are referring to [dekuNukem/Nintendo_Switch_Reverse_Engineering](https://gith
 ## Install
 
 ```shell
-pip install joycon-python
+pip install joycon-python hidapi pyglm
 ```
 
 ## Usage
