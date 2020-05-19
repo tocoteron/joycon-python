@@ -83,9 +83,9 @@ class PythonicJoyCon(JoyCon):
         c2 = c * self._ime_yz_coeff
         return [
             (
-                self.get_accel_x(0) * c,
-                self.get_accel_y(0) * c2,
-                self.get_accel_z(0) * c2,
+                self.get_accel_x(i) * c,
+                self.get_accel_y(i) * c2,
+                self.get_accel_z(i) * c2,
             )
             for i in range(3)
         ]
@@ -95,9 +95,9 @@ class PythonicJoyCon(JoyCon):
         c = self._ime_yz_coeff
         return [
             (
-                self.get_gyro_x(0),
-                self.get_gyro_y(0) * c,
-                self.get_gyro_z(0) * c,
+                self.get_gyro_x(i),
+                self.get_gyro_y(i) * c,
+                self.get_gyro_z(i) * c,
             )
             for i in range(3)
         ]
@@ -108,9 +108,9 @@ class PythonicJoyCon(JoyCon):
         c2 = c * self._ime_yz_coeff
         return [
             (
-                self.get_gyro_x(0) * c,
-                self.get_gyro_y(0) * c2,
-                self.get_gyro_z(0) * c2,
+                self.get_gyro_x(i) * c,
+                self.get_gyro_y(i) * c2,
+                self.get_gyro_z(i) * c2,
             )
             for i in range(3)
         ]
@@ -121,9 +121,9 @@ class PythonicJoyCon(JoyCon):
         c2 = c * self._ime_yz_coeff
         return [
             (
-                self.get_gyro_x(0) * c,
-                self.get_gyro_y(0) * c2,
-                self.get_gyro_z(0) * c2,
+                self.get_gyro_x(i) * c,
+                self.get_gyro_y(i) * c2,
+                self.get_gyro_z(i) * c2,
             )
             for i in range(3)
         ]
@@ -134,9 +134,9 @@ class PythonicJoyCon(JoyCon):
         c2 = c * self._ime_yz_coeff
         return [
             (
-                self.get_gyro_x(0) * c,
-                self.get_gyro_y(0) * c2,
-                self.get_gyro_z(0) * c2,
+                self.get_gyro_x(i) * c,
+                self.get_gyro_y(i) * c2,
+                self.get_gyro_z(i) * c2,
             )
             for i in range(3)
         ]

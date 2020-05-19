@@ -8,7 +8,7 @@ from .device import get_R_ids, get_L_ids
 from .device import get_R_id, get_L_id
 
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 __all__ = [
     "ButtonEventJoyCon",
