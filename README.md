@@ -98,7 +98,9 @@ joycon.get_status()
 
 You need `cython-hidapi` to use Bluetooth / HID connection in Python.
 
-Alternatively, you can use `hid` instead if `cython-hidapi` fails to find your JoyCons.
+Alternatively, you can use `hid` instead if `cython-hidapi` fails to find your JoyCons. 
+
+If you are on Linux you most likely will need to add [udev rules](https://wiki.debian.org/udev) for switch devices to make it work. [These rules](https://www.reddit.com/r/Stadia/comments/egcvpq/using_nintendo_switch_pro_controller_on_linux/fc5s7qm/) will work just fine.
 
 
 ## Gyroscope
